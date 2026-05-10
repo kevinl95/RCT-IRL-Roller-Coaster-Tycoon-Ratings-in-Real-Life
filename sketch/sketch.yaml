@@ -1,0 +1,9 @@
+profiles:
+  default:
+    fqbn: 
+    platforms:
+      - platform: arduino:zephyr
+    libraries:
+      - SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library (1.3.2)
+
+default_profile: default

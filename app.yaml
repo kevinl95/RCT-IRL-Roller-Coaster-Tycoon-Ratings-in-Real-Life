@@ -1,0 +1,6 @@
+name: RollerCoasterTestMeter
+description: Rate real roller coasters just like the classic game! Strap an Arduino UNO Q with an IMU into a fanny pack, ride a coaster, and get Excitement,
+ports: []
+bricks:
+- arduino:web_ui: {}
+icon: 🎢
