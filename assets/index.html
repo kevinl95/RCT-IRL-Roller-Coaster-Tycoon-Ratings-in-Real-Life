@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RCT IRL</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  /* Using system monospace for consistency */
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,7 +33,7 @@
 
   body {
     background: #2C2C2C;
-    font-family: 'Press Start 2P', monospace;
+    font-family: monospace;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -244,7 +244,7 @@
 
   .rct-btn {
     flex: 1;
-    font-family: 'Press Start 2P', monospace;
+    font-family: monospace;
     font-size: 7px;
     padding: 8px 4px;
     border: 2px solid;
@@ -400,7 +400,7 @@
     background: var(--bg-panel);
     border: 2px solid var(--border-light);
     padding: 8px 16px;
-    font-family: 'Press Start 2P', monospace;
+    font-family: monospace;
     font-size: 6px;
     color: var(--text-white);
     transition: transform 0.3s ease;
@@ -500,14 +500,6 @@
         <!-- Stats -->
         <div class="stats">
           <div class="stat-row">
-            <span class="stat-label">Max. speed:</span>
-            <span class="stat-value" id="maxSpeed">--mph</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Average speed:</span>
-            <span class="stat-value" id="avgSpeed">--mph</span>
-          </div>
-          <div class="stat-row">
             <span class="stat-label">Ride time:</span>
             <span class="stat-value" id="rideTime">--secs</span>
           </div>
@@ -606,7 +598,10 @@
     // Start timer display
     timerInterval = setInterval(updateTimer, 100);
 
-    fetch('/api/start', { method: 'POST' });
+    // Tell Python/Bridge to start recording
+    if (window.AppBridge) {
+      fetch('/api/start', { method: 'POST' });
+    }
   }
 
   function stopRecording() {
@@ -616,18 +611,32 @@
     setStatus('processing', 'Analyzing ride data...');
     document.getElementById('controlsRecording').style.display = 'none';
 
-    fetch('/api/stop', { method: 'POST' })
+    // Tell Python/Bridge to stop and process
+    if (window.AppBridge) {
+      fetch('/api/stop', { method: 'POST' })
         .then(r => r.json())
-        .then(data => {
-          if (data.error) {
-            setStatus('ready', data.error);
-            document.getElementById('recordingView').style.display = 'none';
-            document.getElementById('noResults').style.display = 'block';
-            document.getElementById('controlsDefault').style.display = 'flex';
-          } else {
-            showResults(data);
-          }
+        .then(data => showResults(data));
+    } else {
+      // Demo mode: simulate results after a short delay
+      setTimeout(() => {
+        showResults({
+          excitement: 7.22,
+          intensity: 6.15,
+          nausea: 3.41,
+          max_speed: 52,
+          avg_speed: 18,
+          ride_time: 87,
+          ride_length: 2340,
+          max_pos_gs: 3.78,
+          max_neg_gs: -1.29,
+          max_lateral_gs: 2.20,
+          total_air_time: 1.44,
+          drops: 5,
+          highest_drop_height: 142,
+          inversions: 2
         });
+      }, 2000);
+    }
   }
 
   function updateTimer() {
@@ -690,8 +699,6 @@
     });
 
     // Populate stats
-    document.getElementById('maxSpeed').textContent = data.max_speed + 'mph';
-    document.getElementById('avgSpeed').textContent = data.avg_speed + 'mph';
     document.getElementById('rideTime').textContent = 
       Math.floor(data.ride_time / 60) + 'min.' + 
       (data.ride_time % 60).toString().padStart(2,'0') + 'secs';
@@ -783,7 +790,10 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  fetch('/api/status')
+  // ========== Init ==========
+  // Check if running in App Lab WebUI context
+  if (window.AppBridge) {
+    fetch('/api/status')
       .then(r => r.json())
       .then(data => {
         if (data.imu_connected) {
@@ -793,6 +803,10 @@
         }
       })
       .catch(() => setStatus('', 'Waiting for connection...'));
+  } else {
+    // Demo mode
+    setStatus('ready', 'Demo mode — tap Start to simulate a ride');
+  }
 </script>
 
 </body>
